@@ -20,12 +20,13 @@ import os
 
 import dspy
 from dotenv import load_dotenv
-from dspy.datasets.gsm8k import GSM8K, gsm8k_metric
+from dspy.datasets.hotpotqa import HotPotQA
 from dspy.evaluate import Evaluate
+from dspy.evaluate.metrics import answer_exact_match
 from dspy.teleprompt import MIPROv2
 
 # override=True: .zshrc 等で設定済みの環境変数よりも .env の値を優先する
-load_dotenv(override=True)
+load_dotenv("../../.env", override=True)
 
 
 def main():
@@ -41,10 +42,15 @@ def main():
     dspy.configure(lm=lm)
     print(f"\n✅ 言語モデルを設定しました: {lm_model}")
 
-    gsm8k = GSM8K()
-    trainset = gsm8k.train
-    devset = gsm8k.dev
-    print(f"✅ GSM8K データセットを読み込みました（訓練: {len(trainset)}, 評価: {len(devset)}）")
+    hotpotqa = HotPotQA(
+        train_seed=1,
+        train_size=150,
+        eval_seed=2023,
+        dev_size=50,
+    )
+    trainset = [x.with_inputs("question") for x in hotpotqa.train]
+    devset = [x.with_inputs("question") for x in hotpotqa.dev]
+    print(f"✅ HotPotQA データセットを読み込みました（訓練: {len(trainset)}, 評価: {len(devset)}）")
 
     # ============================================================
     # 2. ベースラインプログラムの定義
@@ -59,7 +65,7 @@ def main():
 
     evaluator = Evaluate(
         devset=devset,
-        metric=gsm8k_metric,
+        metric=answer_exact_match,
         num_threads=4,
         display_progress=True,
     )
@@ -84,7 +90,7 @@ def main():
     # auto=None にして num_trials 等を手動で設定
     # auto="light" のデフォルトだと trial が多すぎるため、デモ用に絞る
     teleprompter = MIPROv2(
-        metric=gsm8k_metric,          # 評価関数
+        metric=answer_exact_match,    # 評価関数
         auto=None,                    # 手動設定モード
         num_candidates=3,             # 命令文の候補数
         max_bootstrapped_demos=4,     # Bootstrap few-shot 例の最大数
@@ -92,8 +98,8 @@ def main():
     )
 
     print("\n  最適化設定:")
-    print("    - metric: gsm8k_metric（数値の完全一致）")
-    print("    - num_trials: 3（試行回数）")
+    print("    - metric: answer_exact_match（回答の完全一致）")
+    print("    - num_trials: 5（試行回数）")
     print("    - num_candidates: 3（命令文の候補数）")
     print("\n  🚀 最適化を実行中...（数分かかる場合があります）")
 
@@ -102,7 +108,7 @@ def main():
     optimized_program = teleprompter.compile(
         baseline,              # 最適化するプログラム
         trainset=trainset,     # 訓練データ
-        num_trials=1,          # 試行回数（デモなので少なめに設定）
+        num_trials=5,          # 試行回数（デモなので少なめに設定）
     )
 
     print("\n✅ 最適化が完了しました！")
@@ -142,7 +148,7 @@ def main():
     print("-" * 60)
 
     # JSON ファイルとして保存。後で読み込んで再利用できます。
-    save_path = "optimized_gsm8k.json"
+    save_path = "optimized_hotpotqa.json"
     optimized_program.save(save_path)
     print(f"\n✅ 保存しました: {save_path}")
 
@@ -181,7 +187,7 @@ MIPROv2 がやったこと:
 ポイント:
   - プロンプトを1文字も手書きしていない！
   - DSPy が自動的に最適なプロンプトを発見
-  - optimized_gsm8k.json に保存 → いつでも再利用可能
+  - optimized_hotpotqa.json に保存 → いつでも再利用可能
 
 次のステップ:
   uv run python 04_inference.py

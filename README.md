@@ -10,6 +10,15 @@ DSPy と MIPROv2 を使った LLM アプリケーションの自動最適化デ�
 - **MIPROv2** などのオプティマイザが、データに基づいて最適なプロンプトを自動発見
 - 評価関数で**数値的に**改善を確認
 
+## デモのタスク: HotPotQA（マルチホップ質問応答）
+
+**マルチホップ QA** とは、複数の事実・ステップを組み合わせて推論する必要がある質問応答タスクです。
+
+例:
+- 「カルメンを作曲したのは誰？」→「その作曲家が生まれた国は？」
+
+シンプルな `dspy.Predict` だけでは正答率が低く、MIPROv2 による最適化の効果が明確に出ます。
+
 ## セットアップ
 
 ### 前提条件
@@ -53,8 +62,9 @@ DSPy の基本コンセプトを学びます:
 uv run python 02_evaluate.py
 ```
 
-GSM8K（小学校レベルの数学文章題）データセットを使って、最適化前のベースライン正答率を測定します:
-- `dspy.datasets.gsm8k` で組み込みデータセットを読み込み
+HotPotQA（マルチホップ質問応答）データセットを使って、最適化前のベースライン正答率を測定します:
+- `dspy.datasets.hotpotqa` で組み込みデータセットを読み込み
+- `answer_exact_match` で回答の正確性を評価
 - `dspy.Evaluate` でバッチ評価
 
 ### Step 3: MIPROv2 で自動最適化
@@ -66,7 +76,7 @@ uv run python 03_optimize.py
 MIPROv2 オプティマイザを使って、プロンプトを自動最適化します:
 - Bootstrap Few-Shot Examples → 命令文候補の生成 → ベイズ最適化
 - 最適化前後の正答率を比較
-- 結果を `optimized_gsm8k.json` に保存
+- 結果を `optimized_hotpotqa.json` に保存
 
 ### Step 4: 最適化済みモデルで推論
 
@@ -74,22 +84,28 @@ MIPROv2 オプティマイザを使って、プロンプトを自動最適化し
 uv run python 04_inference.py
 ```
 
-保存した最適化済みプログラムを読み込み、新しい日本語の数学問題で推論します:
-- `optimized_gsm8k.json` から復元
+保存した最適化済みプログラムを読み込み、新しいマルチホップ質問で推論します:
+- `optimized_hotpotqa.json` から復元
 - ベースラインとの比較
 
 ## プロジェクト構成
 
 ```
 dspy-demo/
-├── main.py                  # デモの案内（目次）
-├── 01_basics.py             # Part 1: DSPy の基本
-├── 02_evaluate.py           # Part 2: データセットと評価
-├── 03_optimize.py           # Part 3: MIPROv2 で最適化
-├── 04_inference.py          # Part 4: 推論デモ
-├── optimized_gsm8k.json     # 最適化結果（Part 3 実行後に生成）
-├── pyproject.toml           # プロジェクト設定
-├── uv.lock                  # 依存関係ロックファイル
+├── main.py                    # デモの案内（目次）
+├── 01_basics.py               # Part 1: DSPy の基本
+├── 02_evaluate.py             # Part 2: データセットと評価
+├── 03_optimize.py             # Part 3: MIPROv2 で最適化
+├── 04_inference.py            # Part 4: 推論デモ
+├── optimized_hotpotqa.json    # 最適化結果（Part 3 実行後に生成）
+├── examples/
+│   └── gsm8k/                 # GSM8K（数学文章題）版のデモ
+│       ├── 01_basics.py
+│       ├── 02_evaluate.py
+│       ├── 03_optimize.py
+│       └── 04_inference.py
+├── pyproject.toml             # プロジェクト設定
+├── uv.lock                    # 依存関係ロックファイル
 └── README.md
 ```
 

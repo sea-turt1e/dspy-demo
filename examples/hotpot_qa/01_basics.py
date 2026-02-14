@@ -17,15 +17,15 @@ import dspy
 from dotenv import load_dotenv
 
 # override=True: .zshrc 等で設定済みの環境変数よりも .env の値を優先する
-load_dotenv(override=True)
+load_dotenv("../../.env", override=True)
+
 
 def main():
     # ============================================================
     # 1. 言語モデル（LM）の設定
     # ============================================================
     # DSPy は LiteLLM を内部で使用しており、様々なプロバイダーに対応しています。
-    # 環境変数 OPENAI_API_KEY, OPENAI_MODEL を設定しておけば、dspy.LM() で自動的に OpenAI API に接続します。
-    # .env.example をコピーして .env を作成し、API キー、モデル名を設定してください。
+    # .env ファイルに OPENAI_API_KEY と OPENAI_MODEL を設定してください。
     print("=" * 60)
     print("Part 1: DSPy の基本")
     print("=" * 60)
@@ -54,8 +54,8 @@ def main():
     # Predict はシグネチャをそのまま LLM に渡すだけのシンプルなモジュール
     predict = dspy.Predict("question -> answer")
 
-    # 数学の問題を解いてみましょう
-    question = "5個のりんごが入った箱が3箱あります。全部でりんごは何個ですか？"
+    # シンプルな質問（1ステップで答えられる）
+    question = "Who composed the opera Carmen?"
     result = predict(question=question)
 
     print(f"\n📝 質問: {question}")
@@ -72,8 +72,9 @@ def main():
     # 内部で自動的に reasoning（推論過程）フィールドが追加されます
     cot = dspy.ChainOfThought("question -> answer")
 
-    # 少し複雑な数学の問題
-    question = "太郎は1000円持っています。250円のノートを2冊、150円の鉛筆を3本買いました。残りはいくらですか？"
+    # マルチホップ推論が必要な質問
+    # （「カルメン」の作曲家 → ビゼー → フランス生まれ と2段階の推論が必要）
+    question = "In which country was the composer of the opera Carmen born?"
     result = cot(question=question)
 
     print(f"\n📝 質問: {question}")

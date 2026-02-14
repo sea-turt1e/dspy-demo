@@ -11,7 +11,7 @@ Part 3 で保存した最適化済みプログラムを読み込み、
 
 前提:
   Part 3 (03_optimize.py) を先に実行し、
-  optimized_gsm8k.json が生成されていること。
+  optimized_hotpotqa.json が生成されていること。
 """
 
 import os
@@ -20,7 +20,7 @@ import dspy
 from dotenv import load_dotenv
 
 # override=True: .zshrc 等で設定済みの環境変数よりも .env の値を優先する
-load_dotenv(override=True)
+load_dotenv("../../.env", override=True)
 
 def main():
     print("=" * 60)
@@ -42,7 +42,7 @@ def main():
     print("🔹 最適化済みプログラムを読み込み")
     print("-" * 60)
 
-    save_path = "optimized_gsm8k.json"
+    save_path = "optimized_hotpotqa.json"
 
     if not os.path.exists(save_path):
         print(f"\n❌ {save_path} が見つかりません。")
@@ -59,22 +59,23 @@ def main():
     print(f"\n✅ {save_path} から最適化済みプログラムを読み込みました")
 
     # ============================================================
-    # 3. 日本語の数学問題で推論
+    # 3. マルチホップ質問で推論
     # ============================================================
     print("\n" + "-" * 60)
     print("🔹 新しい問題で推論テスト")
     print("-" * 60)
 
-    # 日本語の数学文章題を用意
+    # マルチホップ推論が必要な質問を用意
+    # 複数の事実を組み合わせて答える必要がある質問です
     questions = [
-        "太郎は500円持っています。150円のジュースを2本買いました。おつりはいくらですか？",
-        "教室に男子が15人、女子が18人います。そのうち5人が帰りました。教室には何人残っていますか？",
-        "花子は1日に3ページずつ本を読みます。この本は全部で42ページあります。読み終わるのに何日かかりますか？",
+        "Who directed the 2008 film that starred the actor who played Batman in The Dark Knight?",
+        "In which country was the composer of the opera Carmen born?",
+        "What is the capital of the country where the Nobel Prize ceremony is held?",
     ]
 
     for i, question in enumerate(questions, 1):
         print(f"\n{'─' * 50}")
-        print(f"📝 問題 {i}: {question}")
+        print(f"📝 質問 {i}: {question}")
         print(f"{'─' * 50}")
 
         result = optimized_program(question=question)
@@ -92,7 +93,7 @@ def main():
 
     # 1つ目の問題で比較
     question = questions[0]
-    print(f"\n📝 問題: {question}")
+    print(f"\n📝 質問: {question}")
 
     baseline_result = baseline(question=question)
     optimized_result = optimized_program(question=question)

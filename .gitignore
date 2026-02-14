@@ -193,6 +193,7 @@ cython_debug/
 
 # DSPy optimized outputs
 optimized_gsm8k.json
+optimized_hotpotqa.json
 
 # PyPI configuration file
 .pypirc
