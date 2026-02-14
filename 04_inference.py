@@ -19,7 +19,8 @@ import os
 import dspy
 from dotenv import load_dotenv
 
-load_dotenv()
+# override=True: .zshrc 等で設定済みの環境変数よりも .env の値を優先する
+load_dotenv(override=True)
 
 def main():
     print("=" * 60)
@@ -29,9 +30,10 @@ def main():
     # ============================================================
     # 1. 言語モデルの設定
     # ============================================================
-    lm = dspy.LM(os.getenv("OPENAI_MODEL", "openai/gpt-5-nano"))
+    lm_model = os.getenv("OPENAI_MODEL", "openai/gpt-5-nano")
+    lm = dspy.LM(lm_model)
     dspy.configure(lm=lm)
-    print(f"\n✅ 言語モデルを設定しました: {lm.model_name}")
+    print(f"\n✅ 言語モデルを設定しました: {lm_model}")
 
     # ============================================================
     # 2. 最適化済みプログラムの読み込み
@@ -49,9 +51,9 @@ def main():
         return
 
     # 最適化済みプログラムを読み込む
-    # 1. まず同じ構造のプログラムを作成
+    # 1. まず同じ構造のプログラム（Predict）を作成
     # 2. .load() で最適化済みのパラメータ（命令文、few-shot 例）を復元
-    optimized_program = dspy.ChainOfThought("question -> answer")
+    optimized_program = dspy.Predict("question -> answer")
     optimized_program.load(save_path)
 
     print(f"\n✅ {save_path} から最適化済みプログラムを読み込みました")
@@ -77,7 +79,6 @@ def main():
 
         result = optimized_program(question=question)
 
-        print(f"🤔 推論過程: {result.reasoning}")
         print(f"💡 回答: {result.answer}")
 
     # ============================================================
@@ -87,7 +88,7 @@ def main():
     print("🔹 ベースラインとの比較（同じ問題で試す）")
     print("-" * 60)
 
-    baseline = dspy.ChainOfThought("question -> answer")
+    baseline = dspy.Predict("question -> answer")
 
     # 1つ目の問題で比較
     question = questions[0]
@@ -97,12 +98,13 @@ def main():
     optimized_result = optimized_program(question=question)
 
     print(f"\n  【ベースライン（最適化なし）】")
-    print(f"    推論: {baseline_result.reasoning}")
     print(f"    回答: {baseline_result.answer}")
 
     print(f"\n  【最適化済み（MIPROv2）】")
-    print(f"    推論: {optimized_result.reasoning}")
     print(f"    回答: {optimized_result.answer}")
+
+    print("\n  → MIPROv2 が自動生成した命令文と few-shot 例により、")
+    print("    同じ Predict モジュールでも回答の質が向上しています。")
 
     # ============================================================
     # まとめ

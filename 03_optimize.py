@@ -24,7 +24,8 @@ from dspy.datasets.gsm8k import GSM8K, gsm8k_metric
 from dspy.evaluate import Evaluate
 from dspy.teleprompt import MIPROv2
 
-load_dotenv()
+# override=True: .zshrc 等で設定済みの環境変数よりも .env の値を優先する
+load_dotenv(override=True)
 
 
 def main():
@@ -35,9 +36,10 @@ def main():
     # ============================================================
     # 1. 言語モデルとデータセットの設定
     # ============================================================
-    lm = dspy.LM(os.getenv("OPENAI_MODEL", "openai/gpt-5-nano"))
+    lm_model = os.getenv("OPENAI_MODEL", "openai/gpt-5-nano")
+    lm = dspy.LM(lm_model)
     dspy.configure(lm=lm)
-    print(f"\n✅ 言語モデルを設定しました: {lm.model_name}")
+    print(f"\n✅ 言語モデルを設定しました: {lm_model}")
 
     gsm8k = GSM8K()
     trainset = gsm8k.train
@@ -47,12 +49,13 @@ def main():
     # ============================================================
     # 2. ベースラインプログラムの定義
     # ============================================================
-    # まず最適化前のプログラムと正答率を確認します
+    # Predict（推論過程なし）をベースラインとして使います。
+    # MIPROv2 が命令文と few-shot 例を追加して、どれだけ改善できるか見ます。
     print("\n" + "-" * 60)
     print("🔹 ベースラインの正答率を測定中...")
     print("-" * 60)
 
-    baseline = dspy.ChainOfThought("question -> answer")
+    baseline = dspy.Predict("question -> answer")
 
     evaluator = Evaluate(
         devset=devset,
@@ -61,8 +64,10 @@ def main():
         display_progress=True,
     )
 
-    baseline_score = evaluator(baseline)
-    print(f"\n📊 ベースライン正答率: {baseline_score}%")
+    # evaluator() は EvaluationResult オブジェクトを返すので .score で数値を取得
+    baseline_result = evaluator(baseline)
+    baseline_score = baseline_result.score
+    print(f"\n📊 ベースライン正答率: {baseline_score:.1f}%")
 
     # ============================================================
     # 3. MIPROv2 の設定と実行
@@ -76,14 +81,20 @@ def main():
     #   "light"  → 少ない試行回数で高速（デモ向き）
     #   "medium" → バランスの取れた設定
     #   "heavy"  → 多くの試行回数で高精度（本番向き）
+    # auto=None にして num_trials 等を手動で設定
+    # auto="light" のデフォルトだと trial が多すぎるため、デモ用に絞る
     teleprompter = MIPROv2(
-        metric=gsm8k_metric,  # 評価関数
-        auto="light",         # 最適化の強度（デモなので light で十分）
+        metric=gsm8k_metric,          # 評価関数
+        auto=None,                    # 手動設定モード
+        num_candidates=3,             # 命令文の候補数
+        max_bootstrapped_demos=4,     # Bootstrap few-shot 例の最大数
+        max_labeled_demos=4,          # ラベル付き few-shot 例の最大数
     )
 
     print("\n  最適化設定:")
     print("    - metric: gsm8k_metric（数値の完全一致）")
-    print('    - auto: "light"（高速モード）')
+    print("    - num_trials: 3（試行回数）")
+    print("    - num_candidates: 3（命令文の候補数）")
     print("\n  🚀 最適化を実行中...（数分かかる場合があります）")
 
     # compile() で最適化を実行
@@ -91,6 +102,7 @@ def main():
     optimized_program = teleprompter.compile(
         baseline,              # 最適化するプログラム
         trainset=trainset,     # 訓練データ
+        num_trials=1,          # 試行回数（デモなので少なめに設定）
     )
 
     print("\n✅ 最適化が完了しました！")
@@ -102,8 +114,9 @@ def main():
     print("🔹 最適化後の正答率を測定中...")
     print("-" * 60)
 
-    optimized_score = evaluator(optimized_program)
-    print(f"\n📊 最適化後の正答率: {optimized_score}%")
+    optimized_result = evaluator(optimized_program)
+    optimized_score = optimized_result.score
+    print(f"\n📊 最適化後の正答率: {optimized_score:.1f}%")
 
     # ============================================================
     # 5. Before / After の比較

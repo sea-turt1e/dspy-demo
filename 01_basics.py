@@ -16,8 +16,8 @@ import os
 import dspy
 from dotenv import load_dotenv
 
-load_dotenv()
-
+# override=True: .zshrc 等で設定済みの環境変数よりも .env の値を優先する
+load_dotenv(override=True)
 
 def main():
     # ============================================================
@@ -30,9 +30,10 @@ def main():
     print("Part 1: DSPy の基本")
     print("=" * 60)
 
-    lm = dspy.LM(os.getenv("OPENAI_MODEL", "openai/gpt-5-nano"))
+    lm_model = os.getenv("OPENAI_MODEL", "openai/gpt-5-nano")
+    lm = dspy.LM(lm_model)
     dspy.configure(lm=lm)
-    print(f"\n✅ 言語モデルを設定しました: {lm.model_name}")
+    print(f"\n✅ 言語モデルを設定しました: {lm_model}")
 
     # ============================================================
     # 2. Signature（シグネチャ）- タスクの入出力を宣言的に定義

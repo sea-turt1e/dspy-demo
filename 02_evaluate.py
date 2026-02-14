@@ -20,7 +20,8 @@ from dotenv import load_dotenv
 from dspy.datasets.gsm8k import GSM8K, gsm8k_metric
 from dspy.evaluate import Evaluate
 
-load_dotenv()
+# override=True: .zshrc 等で設定済みの環境変数よりも .env の値を優先する
+load_dotenv(override=True)
 
 def main():
     print("=" * 60)
@@ -30,9 +31,10 @@ def main():
     # ============================================================
     # 1. 言語モデルの設定
     # ============================================================
-    lm = dspy.LM(os.getenv("OPENAI_MODEL", "openai/gpt-5-nano"))
+    lm_model = os.getenv("OPENAI_MODEL", "openai/gpt-5-nano")
+    lm = dspy.LM(lm_model)
     dspy.configure(lm=lm)
-    print(f"\n✅ 言語モデルを設定しました: {lm.model_name}")
+    print(f"\n✅ 言語モデルを設定しました: {lm_model}")
 
     # ============================================================
     # 2. GSM8K データセットの読み込み
@@ -71,14 +73,16 @@ def main():
     # ============================================================
     # 4. ベースラインプログラムの定義
     # ============================================================
-    # ChainOfThought を使ったシンプルなプログラムをベースラインとします。
+    # Predict を使ったシンプルなプログラムをベースラインとします。
+    # Predict は推論過程（Chain of Thought）なしで直接回答するモジュールです。
     # まだ何も最適化していない状態です。
     print("\n" + "-" * 60)
     print("🔹 ベースラインプログラム（最適化なし）")
     print("-" * 60)
 
-    baseline = dspy.ChainOfThought("question -> answer")
-    print("\n  プログラム: dspy.ChainOfThought('question -> answer')")
+    baseline = dspy.Predict("question -> answer")
+    print("\n  プログラム: dspy.Predict('question -> answer')")
+    print("  ※ 推論過程なし・命令文なし・few-shot 例なしの最もシンプルな状態")
 
     # 1件だけ試してみる
     example = devset[0]
@@ -117,9 +121,11 @@ def main():
         display_table=5,         # 結果の最初の5件をテーブル表示
     )
 
-    baseline_score = evaluator(baseline)
+    # evaluator() は EvaluationResult オブジェクトを返すので .score で数値を取得
+    baseline_result = evaluator(baseline)
+    baseline_score = baseline_result.score
 
-    print(f"\n📊 ベースライン正答率: {baseline_score}%")
+    print(f"\n📊 ベースライン正答率: {baseline_score:.1f}%")
 
     # ============================================================
     # まとめ
@@ -128,7 +134,7 @@ def main():
     print("📌 Part 2 まとめ")
     print("=" * 60)
     print(f"""
-ベースライン（最適化なし）の正答率: {baseline_score}%
+ベースライン（最適化なし）の正答率: {baseline_score:.1f}%
 
 DSPy の評価のポイント:
   1. GSM8K データセット  → 組み込みで利用可能
