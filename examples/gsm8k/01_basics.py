@@ -17,7 +17,7 @@ import dspy
 from dotenv import load_dotenv
 
 # override=True: .zshrc 等で設定済みの環境変数よりも .env の値を優先する
-load_dotenv(override=True)
+load_dotenv("../../.env", override=True)
 
 def main():
     # ============================================================

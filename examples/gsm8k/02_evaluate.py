@@ -21,7 +21,7 @@ from dspy.datasets.gsm8k import GSM8K, gsm8k_metric
 from dspy.evaluate import Evaluate
 
 # override=True: .zshrc 等で設定済みの環境変数よりも .env の値を優先する
-load_dotenv(override=True)
+load_dotenv("../../.env", override=True)
 
 def main():
     print("=" * 60)
