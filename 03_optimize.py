@@ -16,6 +16,8 @@ MIPROv2 の仕組み（3ステップ）:
   uv run python 03_optimize.py
 """
 
+import os
+
 import dspy
 from dotenv import load_dotenv
 from dspy.datasets.gsm8k import GSM8K, gsm8k_metric
@@ -23,6 +25,7 @@ from dspy.evaluate import Evaluate
 from dspy.teleprompt import MIPROv2
 
 load_dotenv()
+
 
 def main():
     print("=" * 60)
@@ -32,9 +35,9 @@ def main():
     # ============================================================
     # 1. 言語モデルとデータセットの設定
     # ============================================================
-    lm = dspy.LM("openai/gpt-5-nano")
+    lm = dspy.LM(os.getenv("OPENAI_MODEL", "openai/gpt-5-nano"))
     dspy.configure(lm=lm)
-    print("\n✅ 言語モデルを設定しました: openai/gpt-5-nano")
+    print(f"\n✅ 言語モデルを設定しました: {lm.model_name}")
 
     gsm8k = GSM8K()
     trainset = gsm8k.train

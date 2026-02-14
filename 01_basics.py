@@ -11,6 +11,8 @@ DSPy の基本コンセプトを学びます。
   uv run python 01_basics.py
 """
 
+import os
+
 import dspy
 from dotenv import load_dotenv
 
@@ -22,14 +24,15 @@ def main():
     # 1. 言語モデル（LM）の設定
     # ============================================================
     # DSPy は LiteLLM を内部で使用しており、様々なプロバイダーに対応しています。
-    # 環境変数 OPENAI_API_KEY が設定されていれば、api_key の指定は不要です。
+    # 環境変数 OPENAI_API_KEY, OPENAI_MODEL を設定しておけば、dspy.LM() で自動的に OpenAI API に接続します。
+    # .env.example をコピーして .env を作成し、API キー、モデル名を設定してください。
     print("=" * 60)
     print("Part 1: DSPy の基本")
     print("=" * 60)
 
-    lm = dspy.LM("openai/gpt-5-nano")
+    lm = dspy.LM(os.getenv("OPENAI_MODEL", "openai/gpt-5-nano"))
     dspy.configure(lm=lm)
-    print("\n✅ 言語モデルを設定しました: openai/gpt-5-nano")
+    print(f"\n✅ 言語モデルを設定しました: {lm.model_name}")
 
     # ============================================================
     # 2. Signature（シグネチャ）- タスクの入出力を宣言的に定義

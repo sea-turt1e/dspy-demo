@@ -13,6 +13,8 @@ DSPy のポイント:
   uv run python 02_evaluate.py
 """
 
+import os
+
 import dspy
 from dotenv import load_dotenv
 from dspy.datasets.gsm8k import GSM8K, gsm8k_metric
@@ -28,9 +30,9 @@ def main():
     # ============================================================
     # 1. 言語モデルの設定
     # ============================================================
-    lm = dspy.LM("openai/gpt-5-nano")
+    lm = dspy.LM(os.getenv("OPENAI_MODEL", "openai/gpt-5-nano"))
     dspy.configure(lm=lm)
-    print("\n✅ 言語モデルを設定しました: openai/gpt-5-nano")
+    print(f"\n✅ 言語モデルを設定しました: {lm.model_name}")
 
     # ============================================================
     # 2. GSM8K データセットの読み込み
